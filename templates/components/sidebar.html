@@ -1,0 +1,82 @@
+<aside id="logo-sidebar" class="fixed top-0 left-0 z-40 w-64 h-screen pt-20 transition-transform -translate-x-full bg-[#0F162B] border-r border-gray-200 sm:translate-x-0 dark:bg-[#0F162B] dark:border-gray-700" aria-label="Sidebar">
+   <div class="float-top h-full px-3 pb-4 overflow-y-auto bg-[#0F162B] dark:bg-[#0F162B]">
+        <div class="sidebar-controls">
+            <button class="new-chat text-[#E8F5FC]"><i class="fa fa-plus"></i> New chat</button>
+            <button class="hide-sidebar text-[#E8F5FC]"><i class="fa fa-chevron-left"></i></button>
+        </div>
+        <ul class="conversations">
+            {% if t_ques %}
+                <li class="grouping">Today</li>
+                {% for item in t_ques %}
+                    <li class="active">
+                        <a class="conversation-button text-[#E8F5FC] my-2" href="{% url 'assistant:continuechat' item.pk %}" data-pk="item.pk">
+                            <i class="fa fa-message fa-regular"></i> {{item.title}}
+                        </a>
+                        <div class="fade"></div>
+                        <div class="edit-buttons">
+                            <button><i class="fa fa-edit"></i></button>
+                            <button><i class="fa fa-trash"></i></button>
+                        </div>
+                    </li>
+                {% endfor %}
+            {% else %}
+                <li class="grouping">Today</li>
+                <li class="active">
+                    <a class="conversation-button text-[#E8F5FC] my-2" href="#">
+                        <i class="fa fa-message fa-regular"></i> This is a conversation title
+                    </a>
+                    <div class="fade"></div>
+                    <div class="edit-buttons">
+                        <button><i class="fa fa-edit"></i></button>
+                        <button><i class="fa fa-trash"></i></button>
+                    </div>
+                </li>
+            {% endif %}
+            {% if y_ques %}
+                <li class="grouping">Yesterday</li>
+                {% for item in y_ques %}
+                    <li>
+                        <a class="conversation-button text-[#E8F5FC] my-2" href="{% url 'assistant:continuechat' item.pk %}" data-pk="item.pk">
+                            <i class="fa fa-message fa-regular"></i>  {{item.title}}
+                        </a>
+                        <div class="fade"></div>
+                        <div class="edit-buttons">
+                            <button><i class="fa fa-edit"></i></button>
+                            <button><i class="fa fa-trash"></i></button>
+                        </div>
+                    </li>
+                {% endfor %}
+            {% endif %}
+            {% if s_ques %}
+                <li class="grouping">Previous 7 days</li>
+                {% for item in s_ques %}
+                    <li>
+                        <a class="conversation-button text-[#E8F5FC] my-2" href="{% url 'assistant:continuechat' item.pk %}" data-pk="item.pk">
+                            <i class="fa fa-message fa-regular"></i>  {{item.title}}
+                        </a>
+                        <div class="fade"></div>
+                        <div class="edit-buttons">
+                            <button><i class="fa fa-edit"></i></button>
+                            <button><i class="fa fa-trash"></i></button>
+                        </div>
+                    </li>
+                {% endfor %}
+            {% endif %}
+            {% if more_s_ques %}
+                <li class="grouping">more that 7 days</li>
+                {% for item in more_s_ques %}
+                    <li>
+                        <a class="conversation-button text-[#E8F5FC] my-2" href="{% url 'assistant:continuechat' item.pk %}" data-pk="item.pk">
+                            <i class="fa fa-message fa-regular"></i>  {{item.title}}
+                        </a>
+                        <div class="fade"></div>
+                        <div class="edit-buttons">
+                            <button><i class="fa fa-edit"></i></button>
+                            <button><i class="fa fa-trash"></i></button>
+                        </div>
+                    </li>
+                {% endfor %}
+            {% endif %}
+        </ul>
+   </div>
+</aside>

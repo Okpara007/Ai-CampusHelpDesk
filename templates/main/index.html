@@ -1,0 +1,71 @@
+{% extends "_base.html" %}
+
+
+
+{% load static %}
+{% comment %} {% load humanize %} {% endcomment %}
+
+
+<!-- title section -->
+{% comment %} {% block title %}{% endblock title %} {% endcomment %}
+
+
+<!-- upper header section -->
+{% block header %}
+  {% include "components/header.html" %}
+{% endblock header %}
+
+
+<!-- banner section -->
+{% block sidebar %}
+  {% include "components/sidebar.html" %}
+{% endblock sidebar %}
+
+<!--content -->
+{% block content %}
+    <main class="max-w-full">
+        <div class="view new-chat-view mt-20">
+            <div class="logo text-[#142E4B] mb-5">
+                <button id="side" class="logo-side"><i class="fa fa-chevron-right"></i></button>
+                <span class="name"> Med Assist</span>
+            </div>
+            {% for msg in chat %}
+                {% if forloop.counter|divisibleby:2 is False %}
+                    <div class="user message pl-72">
+                        <div class="identity">
+                            <i class="user-icon">u</i>
+                        </div>
+                        <div class="content gpt">
+                            <p>{{msg}}</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="assistant message pl-72">
+                        <div class="identity">
+                            <i class="gpt user-icon">G</i>
+                        </div>
+                        <div class="content user">
+                            <p>{{msg}}</p>
+                        </div>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    
+        <div class="view conversation-view mt-20">
+            <div class="logo">
+                <button id="side" class="logo-side"><i class="fa fa-chevron-right"></i></button>
+                <span class="name"> Med Assist</span>
+            </div>
+        </div>
+    
+        <div id="message-form" class="mx-0 md:mx-80 fixed inset-y-[83%] z-40 w-full md:w-3/6 lg:w-2/3 max-w-4xl md:max-w-3xl lg:max-w-[850px]">
+            {%csrf_token%}
+            <div class="message-wrapper">
+                <textarea id="message" rows="1" placeholder="Send a message"></textarea>
+                <button id="speech" class="absolute right-[43px] -top-[1px] mt-3 py-[7px] pl-[9px] pr-[7px] inline-block border-none z-40 text-[#38BCF9]"><i class="fa fa-microphone"></i></button>
+                <button type="submit" class="send-button z-40"><i class="fa fa-paper-plane"></i></button>
+            </div>
+        </div>
+    </main>
+{% endblock content %}
