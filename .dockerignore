@@ -1,0 +1,13 @@
+*.egg-info
+*.sql.gz
+.cache
+.idea
+.pydevproject
+.git/
+.vagrant/
+__pycache__
+dist
+docs
+environ
+logs
+
