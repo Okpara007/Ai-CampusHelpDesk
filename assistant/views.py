@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
-# import speech_recognition as sr
-# import pyttsx3
+from django.contrib import messages
+import speech_recognition as sr
+import pyttsx3
 import json
 import uuid
 import openai
@@ -27,6 +28,7 @@ prompt = """
     You can provide expert advice on self-diagnosis options in the case where an illness can be treated using a home remedy.
     If a query requires serious medical attention with a doctor, recommend them to book an appointment with our doctors
     If you are asked a question that is not related to medical health respond with "I'm sorry but your question is beyond my functionalities".
+    Always give a response or answer the query that relate to the last response you gave. Before answering any other queries, check if it correspond to the last responses you gave. 
     Do not use external URLs or blogs to refer
     Format any lists on individual lines with a dash and a space in front of each line.
 """
@@ -35,7 +37,7 @@ prompt = """
 def ask_openai(message):
     response = client.chat.completions.create(
         model = "gpt-3.5-turbo",
-        max_tokens = 100,
+        # max_tokens = 100,
         messages=[
             {"role": "system", "content": prompt},
             {"role": "user", "content": message},
@@ -50,46 +52,34 @@ def initiate_chat(request):
         # chat_is_activated = Chat.objects.filter(user = request.user, conversation__isnull= False)
         message = request.POST.get('message')
         chatId = request.POST.get('chatId')
+        # itemId = request.POST.get('itemId')
+        print(chatId)
         # chatid = str(uuid.uuid4())
-        try:
+        if Chat.objects.filter(user= request.user, chat_id = chatId).exists():
             cont = Chat.objects.get(user = request.user, chat_id = chatId)
             cont.conversation.append(f"{message}")
             chats = ask_openai(message)
-            cont.conversation.extend(chats)
-            print(chats)
+            cont.conversation.append(chats)
             cont = cont.save()
             return JsonResponse({'message':message, 'chats':chats})
-        except Chat.DoesNotExist:
+        else:
             chats = ask_openai(message)
             chat_is_new = Chat.objects.create(
-                user = request.user, title = 'chat is new', chat_id=chatId, 
+                user = request.user, title = message, chat_id=chatId, 
                 conversation=[f"{message}", f"{chats}"]
             )
             return JsonResponse({'message':message, 'chats':chats})
 
 def index(request):
     if request.user.is_authenticated:
-        today = date.today()
-        yesday = date.today() - timedelta(days=1)
-        seven_days_ago = date.today() - timedelta(days=7)
         
-        questions = Chat.objects.filter(user=request.user)
-        t_ques = questions.filter(created_at=today)
-        y_ques = questions.filter(created_at=yesday)
-        s_ques = questions.filter(created_at=seven_days_ago)
-        more_s_ques = questions.filter(created_at__lte=seven_days_ago)
-
-        
-        return render(request, 'main/index.html', {'t_ques':t_ques, 'y_ques':y_ques, 's_ques':s_ques, 'more_s_ques':more_s_ques})
+        return render(request, 'main/index.html')
     else:
         
         return redirect('userschema:signin')
 
-
-
-
-
 def continue_chat(request, chat_id):
+    url = request.META.get('HTTP_REFERER')
     chat = get_object_or_404(Chat, pk = chat_id, user = request.user)
     datailchat = chat.conversation
 
@@ -104,11 +94,20 @@ def continue_chat(request, chat_id):
         chat.save()
         return JsonResponse({"message":message, "chats":chats})
 
-    print(datailchat)
-
     return render(request, 'main/index.html', {'chat':datailchat})
+
 
 def history_view(request):
     convers = Chat.objects.filter(user= request.user)
 
     return render(request, 'main/index.html', {'convers':convers})
+
+def chatdelete(request):
+    # chat = Chat.objects.get
+    url = request.META.get('HTTP_REFERER')
+    chatId = request.GET.get('deleteitem')
+    print(chatId)
+    Chat.objects.filter(pk=chatId).delete()
+
+    return redirect ('assistant:index')
+

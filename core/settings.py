@@ -60,6 +60,8 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'assistant.context_processor.history',
+                # 'assistant.context_processor.chatdelete',
             ],
         },
     },
