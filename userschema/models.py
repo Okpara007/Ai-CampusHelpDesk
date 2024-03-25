@@ -6,12 +6,6 @@ from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
     email = models.EmailField(unique = True)
-    # password1 = models.CharField(max_length= 100)
-
-
-
-
-
 
 
 

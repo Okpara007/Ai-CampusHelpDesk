@@ -38,21 +38,6 @@ def signin(request):
     else:
         return render(request, 'auth/signin.html', {'form':form})
 
-
-# def google_verification(request):
-#     if request.user.is_authenticated:
-#         # Check if the user has a Google social account
-#         try:
-#             google_account = SocialAccount.objects.get(provider='google', user=request.user)
-#             messages.success(request, "You're already signed up with Google.")
-#             return redirect('assistant:index')
-#         except SocialAccount.DoesNotExist:
-#             messages.error(request, "You will have to signup first")
-#             return redirect('userschema:register')
-#     else:
-#             messages.warning(request, "Please do login first")
-#             return redirect('userschema:signin')
-
 def register(request):
     url = request.META.get('HTTP_REFERER')
     form = RegisterForm()
@@ -63,7 +48,7 @@ def register(request):
             user= usermodel.objects.create_user(username = form.cleaned_data['email'], email = form.cleaned_data['email'], password = form.cleaned_data['password1'])
             user.save()
             auth_login(request, user, backend='userschema.emailauth.EmailBackend')
-            return redirect('assistant:index')
+            return redirect('information:patndoc')
         else:
             messages.error(request, form.errors)
             return redirect(url)

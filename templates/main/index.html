@@ -48,10 +48,10 @@
                 {% else %}
                     <div class="assistant message pl-72">
                         <div class="identity">
-                            <i class="gpt user-icon">Asst</i>
+                            
                         </div>
                         <div class="content user">
-                            <p>{{msg}}</p>
+                            <p>{{ msg|safe }}</p>
                         </div>
                     </div>
                 {% endif %}
@@ -62,8 +62,11 @@
             {%csrf_token%}
             <div class="message-wrapper">
                 <textarea id="message" rows="1" placeholder="Send a message"></textarea>
-                <button disabled id="speech" class="absolute right-[43px] -top-[1px] mt-3 py-[7px] pl-[9px] pr-[7px] inline-block border-none z-40 text-[#38BCF9]"><i class="fa fa-microphone"></i></button>
+                {% comment %} <button disabled id="speech" class="absolute right-[43px] -top-[1px] mt-3 py-[7px] pl-[9px] pr-[7px] inline-block border-none z-40 text-[#38BCF9]"><i class="fa fa-microphone"></i></button> {% endcomment %}
                 <button type="submit" class="send-button z-40"><i class="fa fa-paper-plane"></i></button>
+                <small class="text-[#0F162B] text-xm font-medium">This is a Medical Chatbot</small>
+                <!-- <a href="{% url 'information:appointment' %}">appointment -->
+                </a>
             </div>
         </div>
     </main>

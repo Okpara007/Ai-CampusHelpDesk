@@ -24,11 +24,13 @@ html, body {
 
 
 
+
 body {
     /* background: var(--color-main); */
     display: flex;
     font-size: 1em;
-    font-family: system-ui, sans-serif;
+    /* font-family: system-ui, sans-serif; */
+    font-family: "Inter", Arial, Helvetica, sans-serif;
 }
 .float-top {
     display: flex;
@@ -201,6 +203,11 @@ main {
     background-color: whitesmoke;
 }
 
+div.apoint {
+    overflow-y: auto !important;
+    background-color: whitesmoke;
+}
+
 main .view {
     display: flex;
     flex-direction: column;
@@ -219,6 +226,9 @@ main .view {
     background-color: whitesmoke;
     font-weight: bold;
     text-align: center;
+}
+.log .logo {
+    background-color: white;
 }
 .logostyle {
     color: var(--color-logo);
@@ -248,6 +258,10 @@ main .view {
     box-sizing: border-box;
     padding: 6px 10px 6px 10px;
     cursor: pointer;
+}
+
+#mode{
+    z-index: 999 !important;
 }
 
 .content p{
@@ -356,7 +370,6 @@ main .view {
     position: absolute;
     right: 12px;
     top: 50%;
-    transform: translateY(-50%);
     background: var(--color-gpt3);
     border-radius: 5px;
     display: inline-block;
@@ -364,7 +377,7 @@ main .view {
     padding: 7px 9px 7px 7px;
     color: var(--color-white);
     border: none;
-    margin-top: -2px;
+    margin-top: -2em;
 }
 
 button.send-button:hover {

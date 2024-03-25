@@ -8,4 +8,4 @@ from .models import *
 class ChatAdmin(admin.ModelAdmin):
     list_display_links = ('title',)
     search_fields = ('user','title')
-    list_display = ("title","chat_id","created_at")
+    list_display = ("user","title","chat_id","created_at")

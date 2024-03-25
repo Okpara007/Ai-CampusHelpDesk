@@ -10,4 +10,6 @@ urlpatterns = [
     path('chat-previous/<str:chat_id>/initiate-chat/', continue_chat),
     path('history/', history_view, name='history'),
     path('delete-chat/', chatdelete, name='chatdelete'),
+    path('delete-allchat/', alldelete, name='alldelete'),
+    path('delete-user/', userdelete, name='userdelete'),
 ]

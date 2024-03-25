@@ -12,4 +12,5 @@ urlpatterns = [
     path('', include('assistant.urls')),
 
     path('auth/', include('userschema.urls')),
+    path('pre-home/', include('extrainfo.urls')),
 ] + static(settings.STATIC_URL, document_root= settings.COMPRESS_ROOT if getattr(settings, 'COMPRESS_ENABLED', False) else settings.STATIC_ROOT,)

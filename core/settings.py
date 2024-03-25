@@ -14,7 +14,8 @@ SECRET_KEY = 'django-insecure-k8_n^wxtpg!3swm902#8e9n0udpq_yuu(8m66p(1vylm6mu*#z
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ["*"]
+
 
 
 # Application definition
@@ -33,7 +34,8 @@ INSTALLED_APPS = [
     'allauth.socialaccount.providers.google', # new
     'compressor',
     'assistant',
-    'userschema'
+    'userschema',
+    'extrainfo'
 ]
 
 MIDDLEWARE = [
@@ -61,7 +63,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'assistant.context_processor.history',
-                # 'assistant.context_processor.chatdelete',
             ],
         },
     },
