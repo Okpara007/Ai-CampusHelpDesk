@@ -20,7 +20,7 @@ from userschema.models import *
 # npx tailwindcss -i ./assistant/static/src/input.css -o ./assistant/static/src/output.css --watch
 # 01B9B4
 client =OpenAI(
-    api_key = "***REMOVED***rd1cxSfDjPCRJRVmn4U3T3BlbkFJ1VIWponsQD5XdclG6Znt"
+    api_key = ""
 )
 
 text = f"""
