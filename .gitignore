@@ -68,3 +68,4 @@ web_modules/
 
 # Optional stylelint cache
 .stylelintcache
+.env
