@@ -1,4 +1,4 @@
-#!/Users/delight/Downloads/medicalgpt/venv/bin/python
+#!/Users/delight/Documents/MedicalAsst/venv/bin/python3.12
 # -*- coding: utf-8 -*-
 import re
 import sys

@@ -1,0 +1,51 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="p-8">
+    <h1 class="text-2xl font-bold mb-4">Manage Assessment Records</h1>
+
+    <form method="post" class="grid grid-cols-1 md:grid-cols-2 gap-4 bg-white p-4 rounded shadow">
+        {% csrf_token %}
+        {% for field in form %}
+            <div>
+                <label class="block text-sm font-medium mb-1">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}<p class="text-red-600 text-xs">{{ field.errors|striptags }}</p>{% endif %}
+            </div>
+        {% endfor %}
+        <div class="md:col-span-2">
+            <button class="bg-[#0F162B] text-white px-4 py-2 rounded" type="submit">Save Record</button>
+        </div>
+    </form>
+
+    <h2 class="text-xl font-semibold mt-8 mb-3">Recent Records</h2>
+    <div class="overflow-x-auto bg-white rounded shadow">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="border-b">
+                    <th class="text-left p-2">Student</th>
+                    <th class="text-left p-2">Type</th>
+                    <th class="text-left p-2">Subject</th>
+                    <th class="text-left p-2">Score</th>
+                    <th class="text-left p-2">Course</th>
+                    <th class="text-left p-2">Date</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in records %}
+                    <tr class="border-b">
+                        <td class="p-2">{{ item.student.email }}</td>
+                        <td class="p-2">{{ item.get_assessment_type_display }}</td>
+                        <td class="p-2">{{ item.subject }}</td>
+                        <td class="p-2">{{ item.score }}/{{ item.max_score }}</td>
+                        <td class="p-2">{{ item.course|default:"-" }}</td>
+                        <td class="p-2">{{ item.exam_date|default:"-" }}</td>
+                    </tr>
+                {% empty %}
+                    <tr><td class="p-3" colspan="6">No assessment records yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock content %}

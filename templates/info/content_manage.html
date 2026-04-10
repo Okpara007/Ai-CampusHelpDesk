@@ -1,0 +1,182 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="p-8">
+    <h1 class="text-2xl font-bold mb-6">Content Management</h1>
+
+    <div class="bg-white p-4 rounded shadow mb-6">
+        <form method="get" class="grid md:grid-cols-4 gap-3 items-end">
+            <div class="md:col-span-2">
+                <label class="block text-sm font-medium mb-1" for="search-q">Search</label>
+                <input id="search-q" type="text" name="q" value="{{ query }}" placeholder="Title, question, course, keyword..." class="w-full border rounded px-3 py-2" />
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1" for="ann-sort">Announcement Sort</label>
+                <select id="ann-sort" name="ann_sort" class="w-full border rounded px-3 py-2">
+                    <option value="newest" {% if announcement_sort == "newest" %}selected{% endif %}>Newest</option>
+                    <option value="oldest" {% if announcement_sort == "oldest" %}selected{% endif %}>Oldest</option>
+                    <option value="title" {% if announcement_sort == "title" %}selected{% endif %}>Title</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button class="bg-[#0F162B] text-white px-3 py-2 rounded w-full" type="submit">Apply</button>
+                <a href="{% url 'information:manage_content' %}" class="bg-gray-100 border px-3 py-2 rounded w-full text-center">Reset</a>
+            </div>
+
+            <div>
+                <label class="block text-sm font-medium mb-1" for="res-sort">Resource Sort</label>
+                <select id="res-sort" name="res_sort" class="w-full border rounded px-3 py-2">
+                    <option value="newest" {% if resource_sort == "newest" %}selected{% endif %}>Newest</option>
+                    <option value="oldest" {% if resource_sort == "oldest" %}selected{% endif %}>Oldest</option>
+                    <option value="title" {% if resource_sort == "title" %}selected{% endif %}>Title</option>
+                    <option value="type" {% if resource_sort == "type" %}selected{% endif %}>Type</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-sm font-medium mb-1" for="faq-sort">FAQ Sort</label>
+                <select id="faq-sort" name="faq_sort" class="w-full border rounded px-3 py-2">
+                    <option value="question" {% if faq_sort == "question" %}selected{% endif %}>Question</option>
+                    <option value="updated" {% if faq_sort == "updated" %}selected{% endif %}>Recently Updated</option>
+                    <option value="oldest" {% if faq_sort == "oldest" %}selected{% endif %}>Least Recently Updated</option>
+                </select>
+            </div>
+        </form>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-4">
+        <section class="bg-white p-4 rounded shadow">
+            <h2 class="font-semibold mb-3">New Announcement</h2>
+            <form method="post" class="space-y-2">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="announcement">
+                {{ announcement_form.as_p }}
+                <button class="bg-[#0F162B] text-white px-3 py-2 rounded" type="submit">Create</button>
+            </form>
+        </section>
+
+        <section class="bg-white p-4 rounded shadow">
+            <h2 class="font-semibold mb-3">New Resource</h2>
+            <form method="post" enctype="multipart/form-data" class="space-y-2">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="resource">
+                {{ resource_form.as_p }}
+                <button class="bg-[#0F162B] text-white px-3 py-2 rounded" type="submit">Create</button>
+            </form>
+        </section>
+
+        <section class="bg-white p-4 rounded shadow">
+            <h2 class="font-semibold mb-3">New FAQ</h2>
+            <form method="post" class="space-y-2">
+                {% csrf_token %}
+                <input type="hidden" name="form_type" value="faq">
+                {{ faq_form.as_p }}
+                <button class="bg-[#0F162B] text-white px-3 py-2 rounded" type="submit">Create</button>
+            </form>
+        </section>
+    </div>
+
+    <div class="grid lg:grid-cols-3 gap-4 mt-6">
+        <section class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2">Announcements</h3>
+            {% for item in announcements %}
+                <div class="mb-3 border-b pb-2">
+                    <p class="text-sm">- {{ item.title }} ({{ item.category }})</p>
+                    <div class="flex gap-2 mt-2">
+                        <a class="text-xs px-2 py-1 rounded bg-blue-700 text-white" href="{% url 'information:edit_announcement' item.id %}">Edit</a>
+                        <form method="post" action="{% url 'information:delete_announcement' item.id %}">
+                            {% csrf_token %}
+                            <button class="text-xs px-2 py-1 rounded bg-red-700 text-white" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-sm text-gray-600">No announcements found.</p>
+            {% endfor %}
+            {% if announcements.paginator.num_pages > 1 %}
+                <div class="flex gap-2 mt-3 text-xs">
+                    {% if announcements.has_previous %}
+                        <a class="px-2 py-1 border rounded" href="?q={{ query }}&ann_sort={{ announcement_sort }}&res_sort={{ resource_sort }}&faq_sort={{ faq_sort }}&ann_page={{ announcements.previous_page_number }}&res_page={{ resources.number }}&faq_page={{ faqs.number }}">Prev</a>
+                    {% endif %}
+                    <span class="px-2 py-1 border rounded">Page {{ announcements.number }} / {{ announcements.paginator.num_pages }}</span>
+                    {% if announcements.has_next %}
+                        <a class="px-2 py-1 border rounded" href="?q={{ query }}&ann_sort={{ announcement_sort }}&res_sort={{ resource_sort }}&faq_sort={{ faq_sort }}&ann_page={{ announcements.next_page_number }}&res_page={{ resources.number }}&faq_page={{ faqs.number }}">Next</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2">Resources</h3>
+            {% for item in resources %}
+                <div class="mb-3 border-b pb-2">
+                    <p class="text-sm">- {{ item.title }} ({{ item.get_resource_type_display }})</p>
+                    <div class="flex gap-2 mt-2">
+                        <a class="text-xs px-2 py-1 rounded bg-blue-700 text-white" href="{% url 'information:edit_resource' item.id %}">Edit</a>
+                        <form method="post" action="{% url 'information:delete_resource' item.id %}">
+                            {% csrf_token %}
+                            <button class="text-xs px-2 py-1 rounded bg-red-700 text-white" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-sm text-gray-600">No resources found.</p>
+            {% endfor %}
+            {% if resources.paginator.num_pages > 1 %}
+                <div class="flex gap-2 mt-3 text-xs">
+                    {% if resources.has_previous %}
+                        <a class="px-2 py-1 border rounded" href="?q={{ query }}&ann_sort={{ announcement_sort }}&res_sort={{ resource_sort }}&faq_sort={{ faq_sort }}&ann_page={{ announcements.number }}&res_page={{ resources.previous_page_number }}&faq_page={{ faqs.number }}">Prev</a>
+                    {% endif %}
+                    <span class="px-2 py-1 border rounded">Page {{ resources.number }} / {{ resources.paginator.num_pages }}</span>
+                    {% if resources.has_next %}
+                        <a class="px-2 py-1 border rounded" href="?q={{ query }}&ann_sort={{ announcement_sort }}&res_sort={{ resource_sort }}&faq_sort={{ faq_sort }}&ann_page={{ announcements.number }}&res_page={{ resources.next_page_number }}&faq_page={{ faqs.number }}">Next</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </section>
+
+        <section class="bg-white p-4 rounded shadow">
+            <h3 class="font-semibold mb-2">FAQs</h3>
+            {% for item in faqs %}
+                <div class="mb-3 border-b pb-2">
+                    <p class="text-sm">- {{ item.question }}</p>
+                    <div class="flex gap-2 mt-2">
+                        <a class="text-xs px-2 py-1 rounded bg-blue-700 text-white" href="{% url 'information:edit_faq' item.id %}">Edit</a>
+                        <form method="post" action="{% url 'information:delete_faq' item.id %}">
+                            {% csrf_token %}
+                            <button class="text-xs px-2 py-1 rounded bg-red-700 text-white" type="submit">Delete</button>
+                        </form>
+                    </div>
+                </div>
+            {% empty %}
+                <p class="text-sm text-gray-600">No FAQs found.</p>
+            {% endfor %}
+            {% if faqs.paginator.num_pages > 1 %}
+                <div class="flex gap-2 mt-3 text-xs">
+                    {% if faqs.has_previous %}
+                        <a class="px-2 py-1 border rounded" href="?q={{ query }}&ann_sort={{ announcement_sort }}&res_sort={{ resource_sort }}&faq_sort={{ faq_sort }}&ann_page={{ announcements.number }}&res_page={{ resources.number }}&faq_page={{ faqs.previous_page_number }}">Prev</a>
+                    {% endif %}
+                    <span class="px-2 py-1 border rounded">Page {{ faqs.number }} / {{ faqs.paginator.num_pages }}</span>
+                    {% if faqs.has_next %}
+                        <a class="px-2 py-1 border rounded" href="?q={{ query }}&ann_sort={{ announcement_sort }}&res_sort={{ resource_sort }}&faq_sort={{ faq_sort }}&ann_page={{ announcements.number }}&res_page={{ resources.number }}&faq_page={{ faqs.next_page_number }}">Next</a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </section>
+    </div>
+
+    <section class="bg-white p-4 rounded shadow mt-6">
+        <h3 class="font-semibold mb-2">Recent Content Activity</h3>
+        {% for log in recent_logs %}
+            <div class="text-sm border-b py-2">
+                <span class="font-medium">{{ log.actor.email|default:"System" }}</span>
+                <span class="uppercase text-xs bg-gray-100 rounded px-1.5 py-0.5">{{ log.action }}</span>
+                <span>{{ log.get_content_type_display }}</span>
+                <span class="text-gray-500">{{ log.summary }}</span>
+                <span class="text-gray-400">({{ log.created_at|date:"M d, Y H:i" }})</span>
+            </div>
+        {% empty %}
+            <p class="text-sm text-gray-600">No activity logs yet.</p>
+        {% endfor %}
+    </section>
+</div>
+{% endblock content %}

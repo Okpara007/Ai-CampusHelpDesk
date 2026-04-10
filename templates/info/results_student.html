@@ -1,0 +1,184 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="p-6 md:ml-64 mt-16 bg-gray-50 min-h-screen">
+
+    <!-- HEADER -->
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-800">
+            {% if for_parent %}
+                {{ student.email }} - Dashboard
+            {% else %}
+                My Assessment Dashboard
+            {% endif %}
+        </h1>
+        <p class="text-sm text-gray-500">Track performance, progress and insights</p>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+        {% for item in summary %}
+            <div class="bg-white p-5 rounded-xl shadow-sm border">
+                <p class="text-xs text-gray-400 uppercase">{{ item.assessment_type }}</p>
+                <p class="text-2xl font-bold text-gray-800 mt-1">
+                    {{ item.avg_score|floatformat:1 }}
+                    <span class="text-sm text-gray-400">/ {{ item.avg_max|floatformat:1 }}</span>
+                </p>
+            </div>
+        {% empty %}
+            <div class="col-span-3 bg-white p-6 rounded-xl text-center text-gray-500">
+                No summary data yet
+            </div>
+        {% endfor %}
+    </div>
+
+    <!-- CHARTS -->
+    <div class="grid lg:grid-cols-2 gap-6 mb-6">
+
+        <!-- BAR -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border">
+            <h2 class="text-sm font-semibold text-gray-600 mb-3">Weekly Performance</h2>
+            <div class="h-[250px]">
+                <canvas id="weeklyBarChart"></canvas>
+            </div>
+        </div>
+
+        <!-- PIE -->
+        <div class="bg-white p-5 rounded-xl shadow-sm border">
+            <h2 class="text-sm font-semibold text-gray-600 mb-3">Assessment Distribution</h2>
+            <div class="h-[250px]">
+                <canvas id="assessmentPieChart"></canvas>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- LINE CHART -->
+    <div class="bg-white p-5 rounded-xl shadow-sm border mb-6">
+        <h2 class="text-sm font-semibold text-gray-600 mb-3">Performance Trend (PT1 / PT2)</h2>
+        <div class="h-[250px]">
+            <canvas id="ptLineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- TABLE -->
+    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+        <div class="p-4 border-b">
+            <h2 class="text-sm font-semibold text-gray-600">Assessment Records</h2>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                        <th class="p-3 text-left">Type</th>
+                        <th class="p-3 text-left">Subject</th>
+                        <th class="p-3 text-left">Score</th>
+                        <th class="p-3 text-left">Course</th>
+                        <th class="p-3 text-left">Date</th>
+                        <th class="p-3 text-left">Note</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in records %}
+                        <tr class="border-t hover:bg-gray-50">
+                            <td class="p-3">{{ item.get_assessment_type_display }}</td>
+                            <td class="p-3">{{ item.subject }}</td>
+                            <td class="p-3 font-medium">{{ item.score }}/{{ item.max_score }}</td>
+                            <td class="p-3">{{ item.course|default:"-" }}</td>
+                            <td class="p-3">{{ item.exam_date|default:"-" }}</td>
+                            <td class="p-3 text-gray-500">{{ item.note|default:"-" }}</td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="p-6 text-center text-gray-500">
+                                No records yet
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+{# DATA #}
+{{ bar_labels|json_script:"bar-labels" }}
+{{ bar_values|json_script:"bar-values" }}
+{{ pie_labels|json_script:"pie-labels" }}
+{{ pie_values|json_script:"pie-values" }}
+{{ line_labels|json_script:"line-labels" }}
+{{ line_student|json_script:"line-student" }}
+{{ line_avg|json_script:"line-avg" }}
+{{ line_high|json_script:"line-high" }}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const barLabels = JSON.parse(document.getElementById('bar-labels').textContent);
+const barValues = JSON.parse(document.getElementById('bar-values').textContent);
+
+const pieLabels = JSON.parse(document.getElementById('pie-labels').textContent);
+const pieValues = JSON.parse(document.getElementById('pie-values').textContent);
+
+const lineLabels = JSON.parse(document.getElementById('line-labels').textContent);
+const lineStudent = JSON.parse(document.getElementById('line-student').textContent);
+const lineAvg = JSON.parse(document.getElementById('line-avg').textContent);
+const lineHigh = JSON.parse(document.getElementById('line-high').textContent);
+
+// BAR
+if (barLabels.length) {
+    new Chart(document.getElementById('weeklyBarChart'), {
+        type: 'bar',
+        data: {
+            labels: barLabels,
+            datasets: [{
+                data: barValues,
+                backgroundColor: '#1f4a7a',
+                borderRadius: 6
+            }]
+        },
+        options: {
+            plugins: { legend: { display: false }},
+            scales: { y: { beginAtZero: true }}
+        }
+    });
+}
+
+// PIE
+if (pieLabels.length) {
+    new Chart(document.getElementById('assessmentPieChart'), {
+        type: 'doughnut',
+        data: {
+            labels: pieLabels,
+            datasets: [{
+                data: pieValues,
+                backgroundColor: ['#1f4a7a', '#00a676', '#f59e0b']
+            }]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom' }}
+        }
+    });
+}
+
+// LINE
+if (lineLabels.length) {
+    new Chart(document.getElementById('ptLineChart'), {
+        type: 'line',
+        data: {
+            labels: lineLabels,
+            datasets: [
+                { label: 'Student', data: lineStudent, borderColor: '#1f4a7a', tension: 0.4 },
+                { label: 'Average', data: lineAvg, borderColor: '#00a676', tension: 0.4 },
+                { label: 'Highest', data: lineHigh, borderColor: '#f59e0b', tension: 0.4 }
+            ]
+        },
+        options: {
+            plugins: { legend: { position: 'bottom' }},
+            scales: { y: { beginAtZero: true }}
+        }
+    });
+}
+</script>
+{% endblock content %}

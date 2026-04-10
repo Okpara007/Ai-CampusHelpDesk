@@ -1,0 +1,101 @@
+{% extends "_base.html" %}
+
+{% load static %}
+
+{% block header %}
+  {% include "components/header.html" %}
+{% endblock header %}
+
+{% block sidebar %}
+  {% include "components/sidebar.html" %}
+{% endblock sidebar %}
+
+{% block content %}
+<main class="p-6 md:ml-64 mt-16">
+    <h1 class="text-2xl font-bold text-[#0F162B] mb-6">Role Dashboard</h1>
+
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white p-4 rounded shadow">
+            <p class="text-sm text-gray-500">Announcements</p>
+            <p class="text-2xl font-semibold">{{ announcements|length }}</p>
+        </div>
+        <div class="bg-white p-4 rounded shadow">
+            <p class="text-sm text-gray-500">Resources</p>
+            <p class="text-2xl font-semibold">{{ resources|length }}</p>
+        </div>
+        {% if request.user.role == 'student' or request.user.role == 'parent' %}
+            <div class="bg-white p-4 rounded shadow">
+                <p class="text-sm text-gray-500">Assessment Records</p>
+                <p class="text-2xl font-semibold">{{ student_record_count|default:0 }}</p>
+            </div>
+        {% else %}
+            <div class="bg-white p-4 rounded shadow">
+                <p class="text-sm text-gray-500">Total Students</p>
+                <p class="text-2xl font-semibold">{{ student_count|default:0 }}</p>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="bg-white rounded shadow p-4 mb-6">
+        <h2 class="text-lg font-semibold mb-3">Quick Actions</h2>
+        <div class="flex flex-wrap gap-3 text-sm">
+            <a class="px-3 py-2 rounded bg-[#0F162B] text-white" href="{% url 'assistant:index' %}">Open Chatbot</a>
+            {% if request.user.role == 'student' %}
+                <a class="px-3 py-2 rounded bg-indigo-600 text-white" href="{% url 'information:student_results' %}">My Results</a>
+            {% endif %}
+            {% if request.user.role == 'parent' %}
+                <a class="px-3 py-2 rounded bg-indigo-600 text-white" href="{% url 'information:parent_results' %}">Child Results</a>
+            {% endif %}
+            {% if request.user.role == 'staff' or request.user.role == 'admin' %}
+                <a class="px-3 py-2 rounded bg-green-700 text-white" href="{% url 'information:manage_results' %}">Manage Results</a>
+                <a class="px-3 py-2 rounded bg-slate-700 text-white" href="{% url 'information:manage_content' %}">Manage Content</a>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if request.user.role == 'student' or request.user.role == 'parent' %}
+    <section class="bg-white rounded shadow p-4 mb-6">
+        <h2 class="text-lg font-semibold mb-3">Assessment Distribution</h2>
+        <canvas id="dashboardTypeChart" height="110"></canvas>
+    </section>
+    {% endif %}
+
+    <div class="grid md:grid-cols-2 gap-4">
+        <section class="bg-white rounded shadow p-4">
+            <h2 class="text-lg font-semibold mb-3">Latest Announcements</h2>
+            {% for item in announcements %}
+                <p class="text-sm mb-2">- {{ item.title }}: {{ item.message|truncatewords:18 }}</p>
+            {% empty %}
+                <p class="text-sm text-gray-600">No announcements yet.</p>
+            {% endfor %}
+        </section>
+
+        <section class="bg-white rounded shadow p-4">
+            <h2 class="text-lg font-semibold mb-3">Recent Resources</h2>
+            {% for item in resources %}
+                <p class="text-sm mb-2">- {{ item.title }} ({{ item.get_resource_type_display }})</p>
+            {% empty %}
+                <p class="text-sm text-gray-600">No resources yet.</p>
+            {% endfor %}
+        </section>
+    </div>
+</main>
+
+{% if request.user.role == 'student' or request.user.role == 'parent' %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const labels = JSON.parse(document.getElementById('chart-labels').textContent);
+const values = JSON.parse(document.getElementById('chart-values').textContent);
+if (document.getElementById('dashboardTypeChart')) {
+    new Chart(document.getElementById('dashboardTypeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{ data: values, backgroundColor: ['#1f4a7a', '#00a676', '#f59e0b'] }]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+    });
+}
+</script>
+{% endif %}
+{% endblock content %}

@@ -4,6 +4,11 @@
             <a class="new-chat text-[#E8F5FC]" href="{% url 'assistant:index' %}">
                 <i class="fa fa-plus"></i> New chat
             </a>
+            {% if request.user.role == 'staff' or request.user.role == 'admin' %}
+            <a class="new-chat text-[#E8F5FC]" href="{% url 'information:manage_content' %}">
+                <i class="fa fa-folder-tree"></i>
+            </a>
+            {% endif %}
             {% comment %} <button class=""></button> {% endcomment %}
             <button class="hide-sidebar text-[#E8F5FC]"><i class="fa fa-chevron-left"></i></button>
         </div>

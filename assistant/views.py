@@ -1,162 +1,224 @@
-from django.shortcuts import render, redirect, get_object_or_404
-from django.http import JsonResponse
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-# import speech_recognition as sr
-# import pyttsx3
 import json
+import os
 import uuid
-import openai
+
+from django.contrib.auth.decorators import login_required
+from django.http import HttpResponseForbidden, JsonResponse
+from django.db.models import Count
+from django.shortcuts import get_object_or_404, redirect, render
 from openai import OpenAI
-from datetime import timedelta, date, datetime
+
+from extrainfo.models import Announcement, AssessmentRecord, Course, FAQEntry, StudentResource
+from userschema.models import CustomUser
+
+from .models import Chat
 
 
-
-from .models import *
-from userschema.models import *
-
-# Create your views here.
-
-# npx tailwindcss -i ./assistant/static/src/input.css -o ./assistant/static/src/output.css --watch
-# 01B9B4
-client =OpenAI(
-    api_key = ""
-)
-
-text = f"""
-https://medicalasst.pythonanywhere.com/pre-home/appoint/
-"""
-remind = f"""
-    Medication Reminders Functionality: The chatbot system shall be able to provide reminders \
-    for medication use including additional information which may include dosages, side effects, \
-    and interactions.
-    can you remind of my medications?
-"""
-
-prompt = f"""
-    You are an AI assistant that is an expert in medical health and is part of a hospital system called medicare AI
-    You know about symptoms and signs of various types of illnesses.
-    You can provide expert advice on self-diagnosis options in the case where an illness can be treated using a home remedy.
-
-    If a query requires serious medical attention with a doctor, recommend them to book an appointment with our doctors.
-    email support link is <a href="mailto: mdpeter28@gmail.com">medicare28@gmail.com</a> and phone number link is <a href="tel:08139315800">08139315800</a>
-    Check the text delimeted provided to you with triple backticks \
-    If it contain url links, you must provide them using anchor tag in HTML format with inline styling of color blue, giving it the name Book Appointment. \
-    ```{text}```
-
-    If a query contains booking an appointment with a doctor or how they can book an apointment with a doctor, display the HTML formatted link and educate them on the schedules of the doctor.
-    Appointment with our doctor is available from 9am to 12pm and from 1pm to 4pm from Mondays to Fridays and 11am to 3pm on Saturdays.
-    No appointment with doctors on Sundays
-
-    If the user greets with "hello", respond with a friendly greeting acknowledging the user's initiation of conversation.
-
-    If you are asked a question that is not related to medical health respond with "I'm sorry but your question is beyond my functionalities".
-
-    If the user's query has anything to do with reminder functionality or the user's query refers to the text delimeted provided to you with triple star, \
-    respond with "I'm sorry this functionality is still in process"
-    ***{remind}***
-
-    Always give a response or answer to the query that relate to the last response you gave. Before answering any other queries, check if it correspond to the last responses you gave.
-    Do not use external URLs or blogs to refer
-    Format any lists on individual lines with a dash and a space in front of each line.
-"""
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
 
 
-def ask_openai(message):
-    response = client.chat.completions.create(
-        model = "gpt-3.5-turbo",
-        # max_tokens = 100,
-        messages=[
-            {"role": "system", "content": prompt},
-            {"role": "user", "content": message},
-        ]
+def _role_display(user):
+    if not getattr(user, "role", None):
+        return "student"
+    return user.get_role_display().lower()
+
+
+def _local_knowledge_answer(message):
+    query = (message or "").strip().lower()
+    if not query:
+        return "Please type your question so I can help."
+
+    faq_entries = FAQEntry.objects.filter(is_active=True)
+    for item in faq_entries:
+        keywords = [k.strip().lower() for k in (item.keywords or "").split(",") if k.strip()]
+        text_blob = f"{item.question} {item.answer}".lower()
+        if any(k in query for k in keywords) or query in text_blob:
+            return item.answer
+
+    if any(token in query for token in ["deadline", "date", "event", "notice", "announcement"]):
+        latest = Announcement.objects.filter(is_active=True).order_by("-published_at")[:3]
+        if latest:
+            lines = [f"- {item.title}: {item.message}" for item in latest]
+            return "Latest announcements:\n" + "\n".join(lines)
+
+    if any(token in query for token in ["course", "program", "major", "department"]):
+        courses = Course.objects.select_related("department").all()[:8]
+        if courses:
+            lines = [f"- {c.name} ({c.department.name})" for c in courses]
+            return "Available programs include:\n" + "\n".join(lines)
+
+    if any(token in query for token in ["timetable", "booklet", "resource", "schedule", "test solution"]):
+        resources = StudentResource.objects.select_related("course").all()[:5]
+        if resources:
+            lines = []
+            for r in resources:
+                scope = f" - {r.course.name}" if r.course else ""
+                link = r.external_url or (r.file.url if r.file else "")
+                suffix = f" [{link}]" if link else ""
+                lines.append(f"- {r.title} ({r.get_resource_type_display()}{scope}){suffix}")
+            return "Here are student resources:\n" + "\n".join(lines)
+
+    return None
+
+
+def ask_helpdesk(question, user):
+    local = _local_knowledge_answer(question)
+    if local:
+        return local
+
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        return (
+            "I could not find this in the local helpdesk data yet. "
+            "Please ask admin to add this FAQ in Django admin under FAQ entries, "
+            "or set OPENAI_API_KEY for AI responses."
+        )
+
+    system_prompt = (
+        "You are a college student help desk assistant. "
+        "Scope: admissions, courses, scholarships, fees, timetable, exam schedule, campus facilities, "
+        "events, and student resources. "
+        f"Current user role: {_role_display(user)}. "
+        "Provide concise, practical answers. "
+        "When unsure, say what information is missing and what the user should do next."
     )
 
-    answer = response.choices[0].message.content.strip()
-    return answer
+    response = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question},
+        ],
+    )
+    return (response.choices[0].message.content or "").strip()
 
-@login_required(login_url='userschema:signin')
+
+def _shared_context(user):
+    announcements = Announcement.objects.filter(is_active=True)[:5]
+    resources = StudentResource.objects.select_related("course")[:5]
+    context = {
+        "announcements": announcements,
+        "resources": resources,
+    }
+
+    if user.role == CustomUser.ROLE_STUDENT:
+        records = AssessmentRecord.objects.filter(student=user)
+        context["student_record_count"] = records.count()
+        breakdown = records.values("assessment_type").annotate(total=Count("id")).order_by("assessment_type")
+        context["dashboard_chart_labels"] = json.dumps([item["assessment_type"].upper() for item in breakdown])
+        context["dashboard_chart_values"] = json.dumps([item["total"] for item in breakdown])
+    elif user.role == CustomUser.ROLE_PARENT and user.linked_student_id:
+        records = AssessmentRecord.objects.filter(student=user.linked_student)
+        context["student_record_count"] = records.count()
+        breakdown = records.values("assessment_type").annotate(total=Count("id")).order_by("assessment_type")
+        context["dashboard_chart_labels"] = json.dumps([item["assessment_type"].upper() for item in breakdown])
+        context["dashboard_chart_values"] = json.dumps([item["total"] for item in breakdown])
+    elif user.role in {CustomUser.ROLE_STAFF, CustomUser.ROLE_ADMIN}:
+        context["managed_record_count"] = AssessmentRecord.objects.count()
+        context["student_count"] = CustomUser.objects.filter(role=CustomUser.ROLE_STUDENT).count()
+
+    return context
+
+
+@login_required(login_url="userschema:signin")
+def dashboard(request):
+    context = _shared_context(request.user)
+    return render(request, "main/dashboard.html", context)
+
+
+@login_required(login_url="userschema:signin")
 def initiate_chat(request):
-    if request.method == 'POST':
-        # chat_is_activated = Chat.objects.filter(user = request.user, conversation__isnull= False)
-        message = request.POST.get('message')
-        chatId = request.POST.get('chatId')
-        # itemId = request.POST.get('itemId')
-        print(chatId)
-        # chatid = str(uuid.uuid4())
-        if Chat.objects.filter(user= request.user, chat_id = chatId).exists():
-            cont = Chat.objects.get(user = request.user, chat_id = chatId)
-            cont.conversation.append(f"{message}")
-            chats = ask_openai(message)
-            cont.conversation.append(chats)
-            cont = cont.save()
-            return JsonResponse({'message':message, 'chats':chats})
-        else:
-            chats = ask_openai(message)
-            chat_is_new = Chat.objects.create(
-                user = request.user, title = message, chat_id=chatId,
-                conversation=[f"{message}", f"{chats}"]
-            )
-            return JsonResponse({'message':message, 'chats':chats})
+    if request.method != "POST":
+        return JsonResponse({"error": "POST required"}, status=405)
+
+    message = request.POST.get("message", "").strip()
+    chat_id = request.POST.get("chatId", "").strip() or str(uuid.uuid4())
+
+    if not message:
+        return JsonResponse({"error": "Message cannot be empty"}, status=400)
+
+    chat = Chat.objects.filter(user=request.user, chat_id=chat_id).first()
+    answer = ask_helpdesk(message, request.user)
+
+    if chat:
+        history = chat.conversation or []
+        history.extend([message, answer])
+        chat.conversation = history
+        chat.save(update_fields=["conversation"])
+    else:
+        Chat.objects.create(
+            user=request.user,
+            title=message[:100],
+            chat_id=chat_id,
+            conversation=[message, answer],
+        )
+
+    return JsonResponse({"message": message, "chats": answer})
+
 
 def index(request):
-    if request.user.is_authenticated:
+    if not request.user.is_authenticated:
+        return redirect("userschema:signin")
 
-        return render(request, 'main/index.html')
-    else:
+    context = _shared_context(request.user)
+    return render(request, "main/index.html", context)
 
-        return redirect('userschema:signin')
 
-@login_required(login_url='userschema:signin')
+@login_required(login_url="userschema:signin")
 def continue_chat(request, chat_id):
-    url = request.META.get('HTTP_REFERER')
-    chat = get_object_or_404(Chat, pk = chat_id, user = request.user)
-    datailchat = chat.conversation
+    chat = get_object_or_404(Chat, pk=chat_id, user=request.user)
+    chat_history = list(chat.conversation or [])
 
-    chat_history = datailchat if datailchat else []
-    if request.method == 'POST':
-        message = request.POST.get('message')
-        bot = []
-        chat_history.append(f"{message}")
-        chats = ask_openai(message)
-        chat_history.append(f"{chats}")
-        datailchat = chat_history
-        chat.save()
-        return JsonResponse({"message":message, "chats":chats})
+    if request.method == "POST":
+        message = request.POST.get("message", "").strip()
+        if not message:
+            return JsonResponse({"error": "Message cannot be empty"}, status=400)
 
-    return render(request, 'main/index.html', {'chat':datailchat})
+        answer = ask_helpdesk(message, request.user)
+        chat_history.extend([message, answer])
+        chat.conversation = chat_history
+        chat.save(update_fields=["conversation"])
+        return JsonResponse({"message": message, "chats": answer})
+
+    context = _shared_context(request.user)
+    context["chat"] = chat_history
+    return render(request, "main/index.html", context)
 
 
-@login_required(login_url='userschema:signin')
+@login_required(login_url="userschema:signin")
 def history_view(request):
-    convers = Chat.objects.filter(user= request.user)
+    convers = Chat.objects.filter(user=request.user)
+    return render(request, "main/index.html", {"convers": convers, **_shared_context(request.user)})
 
-    return render(request, 'main/index.html', {'convers':convers})
 
-@login_required(login_url='userschema:signin')
+@login_required(login_url="userschema:signin")
 def chatdelete(request):
-    # chat = Chat.objects.get
-    url = request.META.get('HTTP_REFERER')
-    chatId = request.GET.get('deleteitem')
-    print(chatId)
-    Chat.objects.filter(pk=chatId).delete()
+    chat_id = request.GET.get("deleteitem")
+    Chat.objects.filter(pk=chat_id, user=request.user).delete()
+    return redirect("assistant:index")
 
-    return redirect ('assistant:index')
 
-@login_required(login_url='userschema:signin')
+@login_required(login_url="userschema:signin")
 def alldelete(request):
-    url = request.META.get('HTTP_REFERER')
-    chatId = request.POST['deleteitem']
-    Chat.objects.filter(user_id=chatId).delete()
+    chat_id = request.POST.get("deleteitem")
+    if str(request.user.id) != str(chat_id) and request.user.role not in {CustomUser.ROLE_ADMIN, CustomUser.ROLE_STAFF}:
+        return HttpResponseForbidden("You are not allowed to delete other users' chats.")
 
-    return redirect (url)
+    if request.user.role in {CustomUser.ROLE_ADMIN, CustomUser.ROLE_STAFF}:
+        Chat.objects.filter(user_id=chat_id).delete()
+    else:
+        Chat.objects.filter(user=request.user).delete()
 
-@login_required(login_url='userschema:signin')
+    return redirect(request.META.get("HTTP_REFERER") or "assistant:index")
+
+
+@login_required(login_url="userschema:signin")
 def userdelete(request):
-    url = request.META.get('HTTP_REFERER')
-    chatId = request.POST['deleteitem']
-    CustomUser.objects.filter(id=chatId).delete()
+    target_id = request.POST.get("deleteitem")
+    is_admin = request.user.role in {CustomUser.ROLE_ADMIN, CustomUser.ROLE_STAFF}
 
-    return redirect ('userschema:register')
+    if not is_admin and str(request.user.id) != str(target_id):
+        return HttpResponseForbidden("You are not allowed to delete this account.")
 
-
+    CustomUser.objects.filter(id=target_id).delete()
+    return redirect("userschema:signin")

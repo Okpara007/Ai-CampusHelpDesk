@@ -47,16 +47,14 @@
     <script src="{% static 'js/speech.js' %}"></script>
     <script>
         const showPassword = document.querySelector("#showPassword");
-
-        showPassword.addEventListener("click", function() {
-            const password = document.querySelector(".password");
-            const type = password.getAttribute("type") == "password" ? "text" : "password";
-
-            password.setAttribute("type", type);
-
-            // password.focus();
-        });
-
+        if (showPassword) {
+            showPassword.addEventListener("click", function() {
+                const password = document.querySelector(".password");
+                if (!password) return;
+                const type = password.getAttribute("type") == "password" ? "text" : "password";
+                password.setAttribute("type", type);
+            });
+        }
     </script>
 </body>
 

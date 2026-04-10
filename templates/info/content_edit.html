@@ -1,0 +1,15 @@
+{% extends "_base.html" %}
+
+{% block content %}
+<div class="p-8 max-w-3xl">
+    <h1 class="text-2xl font-bold mb-4">{{ title }}</h1>
+    <form method="post" enctype="multipart/form-data" class="bg-white p-4 rounded shadow space-y-3">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <div class="flex gap-3">
+            <button class="bg-[#0F162B] text-white px-4 py-2 rounded" type="submit">Save Changes</button>
+            <a href="{% url 'information:manage_content' %}" class="px-4 py-2 rounded border border-gray-300">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock content %}

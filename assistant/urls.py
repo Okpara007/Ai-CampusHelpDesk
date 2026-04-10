@@ -1,15 +1,17 @@
 from django.urls import path
-from .views import *
 
-app_name ="assistant"
+from .views import alldelete, chatdelete, continue_chat, dashboard, history_view, index, initiate_chat, userdelete
+
+app_name = "assistant"
 
 urlpatterns = [
-    path('', index, name='index'),
-    path('initiate-chat/', initiate_chat),
-    path('chat-previous/<str:chat_id>/', continue_chat, name='continuechat'),
-    path('chat-previous/<str:chat_id>/initiate-chat/', continue_chat),
-    path('history/', history_view, name='history'),
-    path('delete-chat/', chatdelete, name='chatdelete'),
-    path('delete-allchat/', alldelete, name='alldelete'),
-    path('delete-user/', userdelete, name='userdelete'),
+    path("", index, name="index"),
+    path("dashboard/", dashboard, name="dashboard"),
+    path("initiate-chat/", initiate_chat),
+    path("chat-previous/<str:chat_id>/", continue_chat, name="continuechat"),
+    path("chat-previous/<str:chat_id>/initiate-chat/", continue_chat),
+    path("history/", history_view, name="history"),
+    path("delete-chat/", chatdelete, name="chatdelete"),
+    path("delete-allchat/", alldelete, name="alldelete"),
+    path("delete-user/", userdelete, name="userdelete"),
 ]
