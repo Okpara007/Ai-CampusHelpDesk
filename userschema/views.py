@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, get_user_model, logout
 from django.contrib.auth import login as auth_login
 from django.shortcuts import redirect, render
 
-from .forms import LoginForm, RegisterForm
+from .forms import LoginForm, PublicRegisterForm
 
 usermodel = get_user_model()
 
@@ -34,15 +34,14 @@ def signin(request):
 
 def register(request):
     url = request.META.get("HTTP_REFERER")
-    form = RegisterForm()
+    form = PublicRegisterForm()
     if request.method == "POST":
-        form = RegisterForm(request.POST)
+        form = PublicRegisterForm(request.POST)
         if form.is_valid():
             user = usermodel.objects.create_user(
                 username=form.cleaned_data["email"],
                 email=form.cleaned_data["email"],
                 password=form.cleaned_data["password1"],
-                role=form.cleaned_data["role"],
             )
             auth_login(request, user, backend="userschema.emailauth.EmailBackend")
             return redirect("assistant:index")

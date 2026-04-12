@@ -6,15 +6,10 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponseForbidden, JsonResponse
 from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect, render
-from openai import OpenAI
-
 from extrainfo.models import Announcement, AssessmentRecord, Course, FAQEntry, StudentResource
 from userschema.models import CustomUser
 
 from .models import Chat
-
-
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY", ""))
 
 
 def _role_display(user):
@@ -83,14 +78,24 @@ def ask_helpdesk(question, user):
         "When unsure, say what information is missing and what the user should do next."
     )
 
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": question},
-        ],
-    )
-    return (response.choices[0].message.content or "").strip()
+    try:
+        from openai import OpenAI
+
+        client = OpenAI(api_key=api_key)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": question},
+            ],
+        )
+        return (response.choices[0].message.content or "").strip()
+    except Exception:
+        return (
+            "AI responses are temporarily unavailable in this environment. "
+            "The local helpdesk data is still available, or you can switch to a supported Python version "
+            "such as 3.12 or 3.13 and reinstall dependencies."
+        )
 
 
 def _shared_context(user):
